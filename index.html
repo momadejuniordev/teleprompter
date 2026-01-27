@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Teleprompt Web</title>
+
+<style>
+  * {
+    box-sizing: border-box;
+  }
+
+  body {
+    margin: 0;
+    background: black;
+    color: white;
+    font-family: Arial, Helvetica, sans-serif;
+    overflow: hidden;
+  }
+
+  .container {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+  }
+
+  video {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    z-index: 1;
+  }
+
+  .teleprompt {
+    position: absolute;
+    width: 100%;
+    bottom: -120%;
+    padding: 0 20px;
+    text-align: center;
+    font-size: 36px;
+    line-height: 1.6;
+    z-index: 2;
+    pointer-events: none;
+    text-shadow: 0 0 10px black;
+  }
+
+  .mirror {
+    transform: scaleX(-1);
+  }
+
+  .controls {
+    position: fixed;
+    bottom: 10px;
+    width: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+    z-index: 3;
+  }
+
+  button {
+    padding: 10px 14px;
+    background: #111;
+    color: white;
+    border: 1px solid #333;
+    border-radius: 6px;
+    font-size: 14px;
+  }
+
+  input[type="range"] {
+    width: 120px;
+  }
+
+  textarea {
+    position: fixed;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 90%;
+    height: 120px;
+    background: rgba(0,0,0,0.7);
+    color: white;
+    border: 1px solid #333;
+    padding: 10px;
+    z-index: 3;
+    font-size: 14px;
+  }
+</style>
+</head>
+
+<body>
+
+<textarea id="textInput">
+Este é o seu teleprompt.
+
+Leia com calma.
+Fale com confiança.
+Este vídeo foi gravado diretamente do navegador.
+</textarea>
+
+<div class="container">
+  <video id="camera" autoplay muted playsinline></video>
+  <div id="teleprompt" class="teleprompt"></div>
+</div>
+
+<div class="controls">
+  <button id="play">Play</button>
+  <button id="record">Gravar</button>
+  <button id="mirror">Espelhar</button>
+  <label>Velocidade</label>
+  <input type="range" id="speed" min="0.3" max="3" step="0.1" value="1">
+</div>
+
+<script>
+  const video = document.getElementById("camera");
+  const teleprompt = document.getElementById("teleprompt");
+  const textInput = document.getElementById("textInput");
+
+  const playBtn = document.getElementById("play");
+  const recordBtn = document.getElementById("record");
+  const mirrorBtn = document.getElementById("mirror");
+  const speedInput = document.getElementById("speed");
+
+  let position = -window.innerHeight;
+  let playing = false;
+  let speed = 1;
+  let mirrored = false;
+
+  let mediaRecorder;
+  let chunks = [];
+
+  // CAMERA
+  navigator.mediaDevices.getUserMedia({
+    video: { facingMode: "user" },
+    audio: true
+  }).then(stream => {
+    video.srcObject = stream;
+    setupRecorder(stream);
+  }).catch(() => {
+    alert("Permissão da câmera negada");
+  });
+
+  // TELEPROMPT LOOP
+  function loop() {
+    if (playing) {
+      position += speed;
+      teleprompt.style.transform =
+        `translateY(-${position}px)` + (mirrored ? " scaleX(-1)" : "");
+    }
+    requestAnimationFrame(loop);
+  }
+  loop();
+
+  // PLAY / PAUSE
+  playBtn.onclick = () => {
+    teleprompt.innerText = textInput.value;
+    playing = !playing;
+    playBtn.innerText = playing ? "Pause" : "Play";
+  };
+
+  // SPEED
+  speedInput.oninput = e => speed = Number(e.target.value);
+
+  // MIRROR
+  mirrorBtn.onclick = () => {
+    mirrored = !mirrored;
+  };
+
+  // RECORDER
+  function setupRecorder(stream) {
+    mediaRecorder = new MediaRecorder(stream);
+
+    mediaRecorder.ondataavailable = e => {
+      if (e.data.size > 0) chunks.push(e.data);
+    };
+
+    mediaRecorder.onstop = () => {
+      const blob = new Blob(chunks, { type: "video/webm" });
+      const url = URL.createObjectURL(blob);
+
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "teleprompt-video.webm";
+      a.click();
+
+      chunks = [];
+    };
+  }
+
+  recordBtn.onclick = () => {
+    if (!mediaRecorder) return;
+
+    if (mediaRecorder.state === "inactive") {
+      mediaRecorder.start();
+      recordBtn.innerText = "Parar";
+    } else {
+      mediaRecorder.stop();
+      recordBtn.innerText = "Gravar";
+    }
+  };
+</script>
+
+</body>
+</html>
