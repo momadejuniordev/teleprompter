@@ -3,93 +3,27 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Teleprompt Web</title>
+<title>Teleprompt Pro</title>
+
+<!-- Manifest PWA -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#000000">
 
 <style>
-  * {
-    box-sizing: border-box;
-  }
-
-  body {
-    margin: 0;
-    background: black;
-    color: white;
-    font-family: Arial, Helvetica, sans-serif;
-    overflow: hidden;
-  }
-
-  .container {
-    position: relative;
-    width: 100vw;
-    height: 100vh;
-  }
-
-  video {
-    position: absolute;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    z-index: 1;
-  }
-
-  .teleprompt {
-    position: absolute;
-    width: 100%;
-    bottom: -120%;
-    padding: 0 20px;
-    text-align: center;
-    font-size: 36px;
-    line-height: 1.6;
-    z-index: 2;
-    pointer-events: none;
-    text-shadow: 0 0 10px black;
-  }
-
-  .mirror {
-    transform: scaleX(-1);
-  }
-
-  .controls {
-    position: fixed;
-    bottom: 10px;
-    width: 100%;
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 8px;
-    z-index: 3;
-  }
-
-  button {
-    padding: 10px 14px;
-    background: #111;
-    color: white;
-    border: 1px solid #333;
-    border-radius: 6px;
-    font-size: 14px;
-  }
-
-  input[type="range"] {
-    width: 120px;
-  }
-
-  textarea {
-    position: fixed;
-    top: 10px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 90%;
-    height: 120px;
-    background: rgba(0,0,0,0.7);
-    color: white;
-    border: 1px solid #333;
-    padding: 10px;
-    z-index: 3;
-    font-size: 14px;
-  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: black; color: white; font-family: Arial, Helvetica, sans-serif; overflow: hidden; }
+  .container { position: relative; width: 100vw; height: 100vh; }
+  video { position: absolute; width: 100%; height: 100%; object-fit: cover; z-index: 1; }
+  .teleprompt { position: absolute; width: 100%; bottom: -120%; padding: 0 20px; text-align: center; font-size: 36px; line-height: 1.6; z-index: 2; pointer-events: none; text-shadow: 0 0 10px black; transition: font-size 0.2s; }
+  .controls { position: fixed; bottom: 10px; width: 100%; display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; z-index: 3; }
+  button { padding: 10px 14px; background: #111; color: white; border: 1px solid #333; border-radius: 6px; font-size: 14px; }
+  input[type="range"] { width: 120px; }
+  textarea { position: fixed; top: 10px; left: 50%; transform: translateX(-50%); width: 90%; height: 120px; background: rgba(0,0,0,0.7); color: white; border: 1px solid #333; padding: 10px; z-index: 3; font-size: 14px; }
+  .recording-indicator { position: fixed; top: 10px; right: 10px; width: 16px; height: 16px; border-radius: 50%; background: red; z-index: 4; display: none; animation: blink 1s infinite; }
+  @keyframes blink { 0%, 50%, 100% { opacity: 1; } 25%, 75% { opacity: 0; } }
+  .timer { position: fixed; top: 10px; right: 35px; color: red; font-weight: bold; z-index: 4; font-size: 16px; display: none; }
 </style>
 </head>
-
 <body>
 
 <textarea id="textInput">
@@ -109,9 +43,15 @@ Este vídeo foi gravado diretamente do navegador.
   <button id="play">Play</button>
   <button id="record">Gravar</button>
   <button id="mirror">Espelhar</button>
+  <button id="flipCam">Inverter Câmera</button>
   <label>Velocidade</label>
   <input type="range" id="speed" min="0.3" max="3" step="0.1" value="1">
+  <label>Fonte</label>
+  <input type="range" id="fontsize" min="20" max="80" step="2" value="36">
 </div>
+
+<div class="recording-indicator" id="recDot"></div>
+<div class="timer" id="recTimer">00:00</div>
 
 <script>
   const video = document.getElementById("camera");
@@ -121,33 +61,43 @@ Este vídeo foi gravado diretamente do navegador.
   const playBtn = document.getElementById("play");
   const recordBtn = document.getElementById("record");
   const mirrorBtn = document.getElementById("mirror");
+  const flipBtn = document.getElementById("flipCam");
   const speedInput = document.getElementById("speed");
+  const fontInput = document.getElementById("fontsize");
+
+  const recDot = document.getElementById("recDot");
+  const recTimer = document.getElementById("recTimer");
 
   let position = -window.innerHeight;
   let playing = false;
   let speed = 1;
   let mirrored = false;
+  let fontSize = 36;
 
   let mediaRecorder;
   let chunks = [];
+  let stream;
+  let facingMode = "user";
+  let timerInterval;
+  let seconds = 0;
 
   // CAMERA
-  navigator.mediaDevices.getUserMedia({
-    video: { facingMode: "user" },
-    audio: true
-  }).then(stream => {
+  async function startCamera() {
+    if(stream) {
+      stream.getTracks().forEach(t => t.stop());
+    }
+    stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode }, audio: true });
     video.srcObject = stream;
     setupRecorder(stream);
-  }).catch(() => {
-    alert("Permissão da câmera negada");
-  });
+  }
+
+  startCamera();
 
   // TELEPROMPT LOOP
   function loop() {
     if (playing) {
       position += speed;
-      teleprompt.style.transform =
-        `translateY(-${position}px)` + (mirrored ? " scaleX(-1)" : "");
+      teleprompt.style.transform = `translateY(-${position}px)` + (mirrored ? " scaleX(-1)" : "");
     }
     requestAnimationFrame(loop);
   }
@@ -163,44 +113,74 @@ Este vídeo foi gravado diretamente do navegador.
   // SPEED
   speedInput.oninput = e => speed = Number(e.target.value);
 
+  // FONT SIZE
+  fontInput.oninput = e => {
+    fontSize = Number(e.target.value);
+    teleprompt.style.fontSize = fontSize + "px";
+  };
+
   // MIRROR
-  mirrorBtn.onclick = () => {
-    mirrored = !mirrored;
+  mirrorBtn.onclick = () => mirrored = !mirrored;
+
+  // INVERTER CAMERA
+  flipBtn.onclick = () => {
+    facingMode = facingMode === "user" ? "environment" : "user";
+    startCamera();
   };
 
   // RECORDER
-  function setupRecorder(stream) {
-    mediaRecorder = new MediaRecorder(stream);
-
-    mediaRecorder.ondataavailable = e => {
-      if (e.data.size > 0) chunks.push(e.data);
-    };
-
+  function setupRecorder(camStream) {
+    mediaRecorder = new MediaRecorder(camStream);
+    mediaRecorder.ondataavailable = e => { if(e.data.size>0) chunks.push(e.data); };
     mediaRecorder.onstop = () => {
       const blob = new Blob(chunks, { type: "video/webm" });
       const url = URL.createObjectURL(blob);
-
       const a = document.createElement("a");
       a.href = url;
       a.download = "teleprompt-video.webm";
       a.click();
-
       chunks = [];
+      recDot.style.display = "none";
+      recTimer.style.display = "none";
+      clearInterval(timerInterval);
+      seconds = 0;
+      recTimer.textContent = "00:00";
     };
   }
 
-  recordBtn.onclick = () => {
-    if (!mediaRecorder) return;
+  // TIMER
+  function startTimer() {
+    recTimer.style.display = "block";
+    timerInterval = setInterval(() => {
+      seconds++;
+      const min = String(Math.floor(seconds/60)).padStart(2,'0');
+      const sec = String(seconds%60).padStart(2,'0');
+      recTimer.textContent = `${min}:${sec}`;
+    }, 1000);
+  }
 
-    if (mediaRecorder.state === "inactive") {
+  // RECORD BUTTON
+  recordBtn.onclick = () => {
+    if(!mediaRecorder) return;
+    if(mediaRecorder.state === "inactive") {
       mediaRecorder.start();
+      recDot.style.display = "block";
+      startTimer();
       recordBtn.innerText = "Parar";
     } else {
       mediaRecorder.stop();
       recordBtn.innerText = "Gravar";
     }
   };
-</script>
 
+  // REGISTER SERVICE WORKER
+  if("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("service-worker.js")
+        .then(reg => console.log("Service Worker registrado:", reg.scope))
+        .catch(err => console.log("Falha ao registrar SW:", err));
+    });
+  }
+</script>
 </body>
 </html>

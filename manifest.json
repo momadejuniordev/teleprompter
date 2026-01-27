@@ -1,0 +1,21 @@
+{
+  "name": "Teleprompt Pro",
+  "short_name": "Teleprompt",
+  "start_url": ".",
+  "display": "fullscreen",
+  "background_color": "#000000",
+  "theme_color": "#000000",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "teleprompter.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "teleprompter.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
