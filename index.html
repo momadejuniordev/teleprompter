@@ -96,7 +96,7 @@
     .stage-mask {
       position: absolute;
       inset: 0;
-      background: linear-gradient(180deg, rgba(4, 10, 22, 0.12) 0%, rgba(1, 2, 8, 0.45) 60%, rgba(1, 2, 8, 0.8) 100%);
+      background: linear-gradient(180deg, rgba(4, 10, 22, 0.04) 0%, rgba(1, 2, 8, 0.16) 60%, rgba(1, 2, 8, 0.28) 100%);
       pointer-events: none;
     }
 
@@ -538,8 +538,8 @@ Este vídeo foi gravado diretamente do navegador.</textarea>
     let fontSize = Number(fontSizeInput.value);
     let textAreaWidth = Number(areaInput.value);
     let textTransparency = Number(transparencyInput.value);
-    let theme = 'dark';
-    let textPosition = 'center';
+    let theme = 'none';
+    let textPosition = 'bottom';
     let facingMode = 'user';
     let seconds = 0;
     let timerId = null;
@@ -638,7 +638,7 @@ Este vídeo foi gravado diretamente do navegador.</textarea>
     function getBaseTop() {
       if (textPosition === 'top') return '58%';
       if (textPosition === 'bottom') return '92%';
-      return '80%';
+      return '88%';
     }
 
     function renderTeleprompt() {
