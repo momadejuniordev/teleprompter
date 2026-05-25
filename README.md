@@ -5,10 +5,11 @@ Teleprompt Pro é um teleprompter moderno e profissional para gravação rápida
 ## Recursos
 
 - Rolagem suave e ajustável para leitura confortável
-- Editor de roteiro integrado com visualização imediata
-- Controles de tamanho de fonte e altura de linha
-- Espelhamento de texto para uso com câmeras e monitores
-- Suporte a gravação de vídeo com tempo de duração
+- Editor de roteiro em modal com visualização ao vivo
+- Controles de velocidade, tamanho de fonte, largura do texto e transparência
+- Opções de fundo do texto e posição vertical do teleprompt
+- Espelhamento de texto para alinhamento com câmeras
+- Suporte a gravação de vídeo com indicador e cronômetro
 - Alternar entre câmera frontal e traseira
 - Tela cheia para apresentação
 - Atalhos de teclado: `Space` = Play/Pause, `F` = Tela cheia, `M` = Espelhar texto
@@ -16,11 +17,11 @@ Teleprompt Pro é um teleprompter moderno e profissional para gravação rápida
 ## Como usar
 
 1. Abra `index.html` no navegador
-2. Digite ou cole o roteiro no painel à esquerda
-3. Ajuste velocidade, tamanho de fonte e altura de linha
+2. Clique em `Script` para editar o roteiro
+3. Abra `Ajustes` para controlar velocidade, fonte, transparência e posicionamento
 4. Clique em `Play` para iniciar o teleprompter
-5. Use `Reiniciar` para voltar ao início e `Gravar` para iniciar a captura de vídeo
-6. Clique em `Trocar câmera` para alternar entre câmeras disponíveis
+5. Toque em `Gravar` para capturar o vídeo
+6. Use `Espelhar` para inverter o texto e `Câmera` para alternar dispositivos
 
 ## Observações
 
